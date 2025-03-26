@@ -362,7 +362,6 @@ sos run pipeline/genotype_formatting.ipynb vcf_to_plink
 
 ```
 sos run xqtl-protocol/pipeline/GWAS_QC.ipynb qc_no_prune \
-   --container /mnt/vast/hpc/csg/containers/bioinfo.sif \
 
 ```
 
@@ -381,7 +380,6 @@ Timing <1 min
 
 ```
 sos run pipeline/GWAS_QC.ipynb genotype_phenotype_sample_overlap \
-        --container containers/bioinfo.sif \
 
 ```
 
@@ -392,7 +390,6 @@ Timing <2 min
 
 ```
 sos run pipeline/GWAS_QC.ipynb king \
-    --container containers/bioinfo.sif \
 
 ```
 
@@ -403,7 +400,6 @@ Timing <1 min
 
 ```
 sos run pipeline/GWAS_QC.ipynb qc \
-   --container containers/bioinfo.sif \
 
 ```
 
