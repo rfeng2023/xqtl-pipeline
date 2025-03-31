@@ -483,7 +483,7 @@ Timing <1 min
 
 ```
 sos run pipeline/TensorQTL.ipynb cis \
-    --container containers/TensorQTL.sif 
+
 ```
 
 
@@ -492,7 +492,7 @@ sos run pipeline/TensorQTL.ipynb cis \
 
 ```
 sos run xqtl-protocol/pipeline/TensorQTL.ipynb trans \
-    --container containers/TensorQTL.sif 
+
 ```
 
 
