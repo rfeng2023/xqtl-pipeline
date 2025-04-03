@@ -344,7 +344,7 @@ Timing X min
 
 ```
 sos run VCF_QC.ipynb qc    \
-    --container oras://ghcr.io/cumc/bioinfo_apptainer:latest
+
 ```
 
 
@@ -353,7 +353,6 @@ Timing X min
 
 ```
 sos run pipeline/genotype_formatting.ipynb vcf_to_plink
-    --container /mnt/vast/hpc/csg/containers/bioinfo.sif \
 
 ```
 
@@ -371,7 +370,7 @@ Timing <1 min
 
 ```
 sos run pipeline/genotype_formatting.ipynb genotype_by_chrom \
-    --container containers/bioinfo.sif 
+
 ```
 
 
@@ -409,7 +408,6 @@ Timing <2 min
 
 ```
 sos run pipeline/PCA.ipynb flashpca \
-   --container containers/flashpcaR.sif \
 
 ```
 
@@ -438,7 +436,6 @@ Timing < 1 min
 
 ```
 !sos run phenotype_formatting.ipynb phenotype_by_chrom \
-    --container oras://ghcr.io/cumc/bioinfo_apptainer:latest \
 
 ```
 
@@ -451,7 +448,7 @@ Timing <1 min
 
 ```
 sos run pipeline/covariate_formatting.ipynb merge_genotype_pc \
-    --container containers/bioinfo.sif
+
 ```
 
 
@@ -469,7 +466,6 @@ Timing <1 min
 
 ```
 !sos run covariate_hidden_factor.ipynb PCA \
-    --container oras://ghcr.io/statfungen/pcatools_apptainer:latest \
 
 ```
 
