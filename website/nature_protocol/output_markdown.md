@@ -119,7 +119,7 @@ We provide two different procedures for hidden factor analysis from omics data i
 ##### A.  QTL Association Analysis
 
 
-We perform QTL association testing using TensorQTL [[cf. Taylor-Weiner et al (2019)](https://doi.org/10.1186/s13059-019-1836-7)]. An additional protocol was added to test for quantile QTL associations.
+We perform QTL association testing using TensorQTL [[cf. Taylor-Weiner et al (2019)](https://doi.org/10.1186/s13059-019-1836-7)].
 #### Advanced cis-QTL Analysis (Step 5)
 ##### A.  Univariate Fine-Mapping and TWAS with SuSiE
 
@@ -420,8 +420,7 @@ sos run pipeline/PCA.ipynb flashpca \
 Timing <1 min
 
 ```
-!sos run gene_annotation.ipynb annotate_coord_gene \
-    --container  oras://ghcr.io/cumc/rna_quantification_apptainer:latest --phenotype-id-type gene_name \
+!sos run gene_annotation.ipynb annotate_coord \
 
 ```
 
@@ -429,8 +428,7 @@ Timing <1 min
 Timing <1 min
 
 ```
-!sos run gene_annotation.ipynb annotate_coord_protein \
-    --container  oras://ghcr.io/cumc/rna_quantification_apptainer:latest --sep ","  \
+!sos run gene_annotation.ipynb annotate_coord \
 
 ```
 
