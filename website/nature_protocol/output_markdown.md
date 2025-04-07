@@ -119,7 +119,7 @@ We provide two different procedures for hidden factor analysis from omics data i
 ##### A.  QTL Association Analysis
 
 
-We perform QTL association testing using TensorQTL [[cf. Taylor-Weiner et al (2019)](https://doi.org/10.1186/s13059-019-1836-7)]. An additional protocol was added to test for quantile QTL associations.
+We perform QTL association testing using TensorQTL [[cf. Taylor-Weiner et al (2019)](https://doi.org/10.1186/s13059-019-1836-7)].
 #### Advanced cis-QTL Analysis (Step 5)
 ##### A.  Univariate Fine-Mapping and TWAS with SuSiE
 
@@ -344,7 +344,7 @@ Timing X min
 
 ```
 sos run VCF_QC.ipynb qc    \
-    --container oras://ghcr.io/cumc/bioinfo_apptainer:latest
+
 ```
 
 
@@ -353,7 +353,6 @@ Timing X min
 
 ```
 sos run pipeline/genotype_formatting.ipynb vcf_to_plink
-    --container /mnt/vast/hpc/csg/containers/bioinfo.sif \
 
 ```
 
@@ -362,7 +361,6 @@ sos run pipeline/genotype_formatting.ipynb vcf_to_plink
 
 ```
 sos run xqtl-protocol/pipeline/GWAS_QC.ipynb qc_no_prune \
-   --container /mnt/vast/hpc/csg/containers/bioinfo.sif \
 
 ```
 
@@ -372,7 +370,7 @@ Timing <1 min
 
 ```
 sos run pipeline/genotype_formatting.ipynb genotype_by_chrom \
-    --container containers/bioinfo.sif 
+
 ```
 
 
@@ -381,7 +379,6 @@ Timing <1 min
 
 ```
 sos run pipeline/GWAS_QC.ipynb genotype_phenotype_sample_overlap \
-        --container containers/bioinfo.sif \
 
 ```
 
@@ -392,7 +389,6 @@ Timing <2 min
 
 ```
 sos run pipeline/GWAS_QC.ipynb king \
-    --container containers/bioinfo.sif \
 
 ```
 
@@ -403,7 +399,6 @@ Timing <1 min
 
 ```
 sos run pipeline/GWAS_QC.ipynb qc \
-   --container containers/bioinfo.sif \
 
 ```
 
@@ -413,7 +408,6 @@ Timing <2 min
 
 ```
 sos run pipeline/PCA.ipynb flashpca \
-   --container containers/flashpcaR.sif \
 
 ```
 
@@ -424,8 +418,7 @@ sos run pipeline/PCA.ipynb flashpca \
 Timing <1 min
 
 ```
-!sos run gene_annotation.ipynb annotate_coord_gene \
-    --container  oras://ghcr.io/cumc/rna_quantification_apptainer:latest --phenotype-id-type gene_name \
+!sos run gene_annotation.ipynb annotate_coord \
 
 ```
 
@@ -433,8 +426,7 @@ Timing <1 min
 Timing <1 min
 
 ```
-!sos run gene_annotation.ipynb annotate_coord_protein \
-    --container  oras://ghcr.io/cumc/rna_quantification_apptainer:latest --sep ","  \
+!sos run gene_annotation.ipynb annotate_coord \
 
 ```
 
@@ -444,7 +436,6 @@ Timing < 1 min
 
 ```
 !sos run phenotype_formatting.ipynb phenotype_by_chrom \
-    --container oras://ghcr.io/cumc/bioinfo_apptainer:latest \
 
 ```
 
@@ -457,7 +448,7 @@ Timing <1 min
 
 ```
 sos run pipeline/covariate_formatting.ipynb merge_genotype_pc \
-    --container containers/bioinfo.sif
+
 ```
 
 
@@ -475,7 +466,6 @@ Timing <1 min
 
 ```
 !sos run covariate_hidden_factor.ipynb PCA \
-    --container oras://ghcr.io/statfungen/pcatools_apptainer:latest \
 
 ```
 
@@ -487,7 +477,7 @@ Timing <1 min
 
 ```
 sos run pipeline/TensorQTL.ipynb cis \
-    --container containers/TensorQTL.sif 
+
 ```
 
 
@@ -496,7 +486,7 @@ sos run pipeline/TensorQTL.ipynb cis \
 
 ```
 sos run xqtl-protocol/pipeline/TensorQTL.ipynb trans \
-    --container containers/TensorQTL.sif 
+
 ```
 
 
