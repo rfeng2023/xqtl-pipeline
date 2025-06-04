@@ -352,7 +352,7 @@ sos run VCF_QC.ipynb qc    \
 Timing X min
 
 ```
-sos run pipeline/genotype_formatting.ipynb vcf_to_plink
+sos run xqtl-protocol/pipeline/genotype_formatting.ipynb vcf_to_plink \
 
 ```
 
@@ -369,7 +369,7 @@ sos run xqtl-protocol/pipeline/GWAS_QC.ipynb qc_no_prune \
 Timing <1 min
 
 ```
-sos run pipeline/genotype_formatting.ipynb genotype_by_chrom \
+sos run xqtl-protocol/pipeline/genotype_formatting.ipynb genotype_by_chrom \
 
 ```
 
@@ -435,7 +435,7 @@ Timing <1 min
 Timing < 1 min
 
 ```
-!sos run phenotype_formatting.ipynb phenotype_by_chrom \
+sos run xqtl-protocol/pipeline/phenotype_formatting.ipynb phenotype_by_chrom \
 
 ```
 
@@ -447,7 +447,7 @@ Timing < 1 min
 Timing <1 min
 
 ```
-sos run pipeline/covariate_formatting.ipynb merge_genotype_pc \
+sos run xqtl-protocol/pipeline/covariate_formatting.ipynb merge_genotype_pc \
 
 ```
 
@@ -465,7 +465,7 @@ Timing X min
 Timing <1 min
 
 ```
-!sos run covariate_hidden_factor.ipynb PCA \
+sos run xqtl-protocol/pipeline/covariate_hidden_factor.ipynb Marchenko_PC \
 
 ```
 
