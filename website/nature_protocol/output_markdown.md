@@ -193,13 +193,10 @@ Please refer to the protocol website for more information on this miniprotocol.
 Timing <4 min
 
 ```
-
-!sos run RNA_calling.ipynb fastqc \
-    --cwd ../../output_test \
-    --sample-list ../../PCC_sample_list_subset \
-    --data-dir /restricted/projectnb/amp-ad/ROSMAP_PCC_AC/PCC/ \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
-    -c ../csg.yml  -q neurology
+sos run pipeline/RNA_calling.ipynb fastqc \
+    --cwd output/rnaseq/fastqc \
+    --sample-list data/fastq.list.txt \
+    --data-dir data/fastq
 ```
 
 
@@ -207,16 +204,12 @@ Timing <4 min
 Timing ~10 min
 
 ```
-!sos run RNA_calling.ipynb fastp_trim_adaptor \
-    --cwd ../../output_test \
-    --sample-list ../../PCC_sample_list_subset \
-    --data-dir /restricted/projectnb/amp-ad/ROSMAP_PCC_AC/PCC/ \
-    --STAR-index ../../reference_data/STAR_Index/ \
-    --gtf ../../reference_data/reference_data/Homo_sapiens.GRCh38.103.chr.reformatted.ERCC.gtf \
-    --reference-fasta ../../reference_data/GRCh38_full_analysis_set_plus_decoy_hla.noALT_noHLA_noDecoy_ERCC.fasta \
-    --ref-flat ../../reference_data/Homo_sapiens.GRCh38.103.chr.reformatted.ERCC.ref.flat \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
-    -c ../csg.yml  -q neurology
+sos run pipeline/RNA_calling.ipynb fastp_trim_adaptor \
+    --cwd output/rnaseq --sample-list data/fastq.list.txt \
+    --data-dir data/fastq --STAR-index reference_data/STAR_Index/ \
+    --gtf reference_data/Homo_sapiens.GRCh38.103.chr.reformatted.ERCC.gtf \
+    --reference-fasta reference_data/GRCh38_full_analysis_set_plus_decoy_hla.noALT_noHLA_noDecoy_ERCC.fasta \
+    --ref-flat reference_data/Homo_sapiens.GRCh38.103.chr.reformatted.ERCC.ref.flat
 ```
 
 
@@ -224,32 +217,28 @@ Timing ~10 min
 Timing <2 hours
 
 ```
-!sos run RNA_calling.ipynb STAR_align \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
+sos run pipeline/RNA_calling.ipynb STAR_align \
 
 ```
 
 
 
 ```
-!sos run RNA_calling.ipynb STAR_align \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
+sos run pipeline/RNA_calling.ipynb STAR_align \
 
 ```
 
 
 
 ```
-!sos run RNA_calling.ipynb STAR_align \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
+sos run pipeline/RNA_calling.ipynb STAR_align \
 
 ```
 
 
 
 ```
-!sos run RNA_calling.ipynb STAR_align \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
+sos run pipeline/RNA_calling.ipynb STAR_align \
 
 ```
 
@@ -279,8 +268,7 @@ Timing <X hours
 Timing <15min
 
 ```
-!sos run bulk_expression_QC.ipynb qc \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
+sos run pipeline/bulk_expression_QC.ipynb qc \
 
 ```
 
@@ -289,8 +277,7 @@ Timing <15min
 Timing <10min
 
 ```
-!sos run bulk_expression_normalization.ipynb normalize \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
+sos run pipeline/bulk_expression_normalization.ipynb normalize \
 
 ```
 
@@ -349,18 +336,19 @@ sos run VCF_QC.ipynb qc    \
 
 
 ##### ii. VCF to PLINK
-Timing X min
+Timing <1 min
 
 ```
-sos run xqtl-protocol/pipeline/genotype_formatting.ipynb vcf_to_plink \
+sos run pipeline/genotype_formatting.ipynb vcf_to_plink \
 
 ```
 
 
 ##### iii. Perform QC on both rare and common variants
+Timing <1 min
 
 ```
-sos run xqtl-protocol/pipeline/GWAS_QC.ipynb qc_no_prune \
+sos run pipeline/GWAS_QC.ipynb qc_no_prune \
 
 ```
 
@@ -369,7 +357,7 @@ sos run xqtl-protocol/pipeline/GWAS_QC.ipynb qc_no_prune \
 Timing <1 min
 
 ```
-sos run xqtl-protocol/pipeline/genotype_formatting.ipynb genotype_by_chrom \
+sos run pipeline/genotype_formatting.ipynb genotype_by_chrom \
 
 ```
 
@@ -418,7 +406,7 @@ sos run pipeline/PCA.ipynb flashpca \
 Timing <1 min
 
 ```
-!sos run gene_annotation.ipynb annotate_coord \
+sos run pipeline/gene_annotation.ipynb annotate_coord \
 
 ```
 
@@ -435,7 +423,7 @@ Timing <1 min
 Timing < 1 min
 
 ```
-sos run xqtl-protocol/pipeline/phenotype_formatting.ipynb phenotype_by_chrom \
+sos run pipeline/phenotype_formatting.ipynb phenotype_by_chrom \
 
 ```
 
@@ -447,7 +435,7 @@ sos run xqtl-protocol/pipeline/phenotype_formatting.ipynb phenotype_by_chrom \
 Timing <1 min
 
 ```
-sos run xqtl-protocol/pipeline/covariate_formatting.ipynb merge_genotype_pc \
+sos run pipeline/covariate_formatting.ipynb merge_genotype_pc \
 
 ```
 
@@ -465,7 +453,7 @@ Timing X min
 Timing <1 min
 
 ```
-sos run xqtl-protocol/pipeline/covariate_hidden_factor.ipynb Marchenko_PC \
+sos run pipeline/covariate_hidden_factor.ipynb Marchenko_PC \
 
 ```
 
