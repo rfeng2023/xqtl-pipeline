@@ -247,8 +247,7 @@ sos run pipeline/RNA_calling.ipynb STAR_align \
 Timing <30 min
 
 ```
-!sos run RNA_calling.ipynb rnaseqc_call \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
+sos run pipeline/RNA_calling.ipynb rnaseqc_call \
 
 ```
 
@@ -258,8 +257,7 @@ Timing <X hours
 
 
 ```
-!sos run RNA_calling.ipynb rsem_call \
-    --container oras://ghcr.io/statfungen/rna_quantification_apptainer:latest \
+sos run pipeline/RNA_calling.ipynb rsem_call \
 
 ```
 
