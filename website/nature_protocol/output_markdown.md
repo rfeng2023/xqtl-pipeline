@@ -471,7 +471,7 @@ sos run pipeline/TensorQTL.ipynb cis \
 
 
 ```
-sos run xqtl-protocol/pipeline/TensorQTL.ipynb trans \
+sos run pipeline/TensorQTL.ipynb trans \
 
 ```
 
