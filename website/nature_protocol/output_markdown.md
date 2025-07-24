@@ -476,6 +476,18 @@ sos run pipeline/TensorQTL.ipynb trans \
 ```
 
 
+##### iii. Interaction TensorQTL Command 
+
+
+```
+sos run pipeline/TensorQTL.ipynb cis \
+sos run pipeline/TensorQTL.ipynb cis \
+sos run pipeline/TensorQTL.ipynb cis \
+sos run pipeline/TensorQTL.ipynb cis \
+
+```
+
+
 Timing [FIXME]
 
 ```
