@@ -91,6 +91,7 @@ parts:
     - file: code/enrichment/gsea.ipynb
     - file: code/enrichment/gregor.ipynb
     - file: code/enrichment/sldsc_enrichment.ipynb
-- caption: xQTL Modifier Score
-  chapters:
-  - file: code/xqtl_modifier_score/ems_training.ipynb
+  - caption: xQTL Modifier Score
+    chapters:
+    - file: code/xqtl_modifier_score/ems_training.ipynb
+
