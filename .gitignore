@@ -2,4 +2,7 @@
 **/.RData
 **/.Rhistory
 **/.DS_Store
+**/__pycache__
+**/*_backup.*
 _build
+code/xqtl_modifier_score/data
