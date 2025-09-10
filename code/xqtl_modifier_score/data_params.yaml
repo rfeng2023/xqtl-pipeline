@@ -1,0 +1,7 @@
+train:
+  positive_class_threshold: 0.1
+  negative_class_threshold: 0.01
+
+test:
+  positive_class_threshold: 0.9
+  negative_class_threshold: 0.01

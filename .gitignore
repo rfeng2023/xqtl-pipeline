@@ -5,4 +5,36 @@
 **/__pycache__
 **/*_backup.*
 _build
-code/xqtl_modifier_score/data
+code/xqtl_modifier_score/data#
+
+ Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+env/
+
+# Model training outputs and logs
+catboost_info/
+full_output.log
+results/
+
+# Data files (too large for git)
+*.parquet
+data/
+
+# Backup and old files
+*_backup.py
+*_old.py
+*.backup
+model_training_simplified_backup.py
+model_training_simplified_old.py
+model_training_final.py
+model_training_fixed.py
+create_proper_split.py
+
+# Config backups (keep only the main configs)
+*_backup.yaml
+*_old.yaml
