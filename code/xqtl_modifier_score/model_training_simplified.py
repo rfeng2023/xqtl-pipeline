@@ -179,7 +179,8 @@ for i in train_chromosomes:
         print(f"Warning: File {file_path} does not exist. Skipping chromosome {i}.")
         continue
     # Add the file to the list
-    train_files.append(file_path)
+    train_files = ["train_chr2_no_leak.parquet"]
+    break  # Use single leak-free file
     valid_train_chromosomes.append(i)
 
 if not train_files:
@@ -221,7 +222,8 @@ for i in test_chromosomes:
     file_path = f'{data_dir}/{test_dir}/{file_pattern}'
     # Check if file exists
     if os.path.exists(file_path):
-        test_files.append(file_path)
+        test_files = ["test_chr2_no_leak.parquet"]
+        break  # Use single leak-free file
     else:
         print(f"Warning: Test file {file_path} does not exist. Skipping chromosome {i}.")
 
@@ -354,7 +356,6 @@ from catboost import CatBoostClassifier
 
 # Load model parameters from config
 original_params = model_config['algorithm']['parameter_sets']['standard']
-conservative_params = model_config['algorithm']['parameter_sets']['conservative']
 
 # Create feature weight dictionary from configuration
 feature_weights = {}
@@ -376,19 +377,6 @@ print("Feature weights distribution:")
 print(f"Number of features with weight {high_weight_value}: {sum(value == high_weight_value for value in feature_weights.values())}")
 print(f"Number of features with weight {default_weight}: {sum(value == default_weight for value in feature_weights.values())}")
 
-# Initialize 4 models (only standard training data models)
-# Model 1: Standard data, subset features (original params)
-cat_standard_subset = CatBoostClassifier(
-    **original_params,
-    name="Standard-Subset"
-)
-
-# Model 3: Standard data, subset features (conservative params)
-cat_standard_subset_conservative = CatBoostClassifier(
-    **conservative_params,
-    name="Standard-Subset-Conservative"
-)
-
 # Model 5: Standard data, subset features (original params) with feature weighting
 cat_standard_subset_weighted = CatBoostClassifier(
     **original_params,
@@ -396,115 +384,49 @@ cat_standard_subset_weighted = CatBoostClassifier(
     name="Standard-Subset-Weighted"
 )
 
-# Model 7: Standard data, subset features (conservative params) with feature weighting
-cat_standard_subset_conservative_weighted = CatBoostClassifier(
-    **conservative_params,
-    feature_weights=feature_weights,
-    name="Standard-Subset-Conservative-Weighted"
-)
-
-# Train all models
-print("Training model 1: Standard data, subset features (original params)")
-cat_standard_subset.fit(X_train_subset, Y_train, sample_weight=weight_train)
-
-print("Training model 3: Standard data, subset features (conservative params)")
-cat_standard_subset_conservative.fit(X_train_subset, Y_train, sample_weight=weight_train)
-
+# Train model 5
 print("Training model 5: Standard data, subset features (original params) with feature weighting")
 cat_standard_subset_weighted.fit(X_train_subset, Y_train, sample_weight=weight_train)
 
-print("Training model 7: Standard data, subset features (conservative params) with feature weighting")
-cat_standard_subset_conservative_weighted.fit(X_train_subset, Y_train, sample_weight=weight_train)
-
-# Calculate predictions for all models
-preds_standard_subset = cat_standard_subset.predict_proba(X_test_subset)[:, 1]
-preds_standard_subset_conservative = cat_standard_subset_conservative.predict_proba(X_test_subset)[:, 1]
+# Calculate predictions for model 5
 preds_standard_subset_weighted = cat_standard_subset_weighted.predict_proba(X_test_subset)[:, 1]
-preds_standard_subset_conservative_weighted = cat_standard_subset_conservative_weighted.predict_proba(X_test_subset)[:, 1]
 
-# Calculate metrics for all models
-metrics_dict = {
-    'standard_subset': {
-        'AP': metrics.average_precision_score(Y_test, preds_standard_subset),
-        'AUC': metrics.roc_auc_score(Y_test, preds_standard_subset)
-    },
-    'standard_subset_conservative': {
-        'AP': metrics.average_precision_score(Y_test, preds_standard_subset_conservative),
-        'AUC': metrics.roc_auc_score(Y_test, preds_standard_subset_conservative)
-    },
-    'standard_subset_weighted': {
-        'AP': metrics.average_precision_score(Y_test, preds_standard_subset_weighted),
-        'AUC': metrics.roc_auc_score(Y_test, preds_standard_subset_weighted)
-    },
-    'standard_subset_conservative_weighted': {
-        'AP': metrics.average_precision_score(Y_test, preds_standard_subset_conservative_weighted),
-        'AUC': metrics.roc_auc_score(Y_test, preds_standard_subset_conservative_weighted)
-    }
-}
+# Calculate metrics for model 5
+ap_score = metrics.average_precision_score(Y_test, preds_standard_subset_weighted)
+auc_score = metrics.roc_auc_score(Y_test, preds_standard_subset_weighted)
 
-# Print metrics for all models
+# Print metrics for model 5
 print("\nTest Set Metrics:")
-print(f"1. Standard data, subset features (original) - AP: {metrics_dict['standard_subset']['AP']:.4f}, AUC: {metrics_dict['standard_subset']['AUC']:.4f}")
-print(f"3. Standard data, subset features (conservative) - AP: {metrics_dict['standard_subset_conservative']['AP']:.4f}, AUC: {metrics_dict['standard_subset_conservative']['AUC']:.4f}")
-print(f"5. Standard data, subset features (original) weighted - AP: {metrics_dict['standard_subset_weighted']['AP']:.4f}, AUC: {metrics_dict['standard_subset_weighted']['AUC']:.4f}")
-print(f"7. Standard data, subset features (conservative) weighted - AP: {metrics_dict['standard_subset_conservative_weighted']['AP']:.4f}, AUC: {metrics_dict['standard_subset_conservative_weighted']['AUC']:.4f}")
+print(f"5. Standard data, subset features (original) weighted - AP: {ap_score:.4f}, AUC: {auc_score:.4f}")
 
-# Save all models
-joblib.dump(cat_standard_subset, f'{write_dir}/model_standard_subset_chr_{chromosome_out}_NPR_{NPR_tr}.joblib')
-joblib.dump(cat_standard_subset_conservative, f'{write_dir}/model_standard_subset_conservative_chr_{chromosome_out}_NPR_{NPR_tr}.joblib')
+# Save model 5
 joblib.dump(cat_standard_subset_weighted, f'{write_dir}/model_standard_subset_weighted_chr_{chromosome_out}_NPR_{NPR_tr}.joblib')
-joblib.dump(cat_standard_subset_conservative_weighted, f'{write_dir}/model_standard_subset_conservative_weighted_chr_{chromosome_out}_NPR_{NPR_tr}.joblib')
 
-# Get feature importances for all models
-feature_importances = {
-    'standard_subset': {
-        'importances': cat_standard_subset.feature_importances_,
-        'features': X_train_subset.columns
-    },
-    'standard_subset_conservative': {
-        'importances': cat_standard_subset_conservative.feature_importances_,
-        'features': X_train_subset.columns
-    },
-    'standard_subset_weighted': {
-        'importances': cat_standard_subset_weighted.feature_importances_,
-        'features': X_train_subset.columns
-    },
-    'standard_subset_conservative_weighted': {
-        'importances': cat_standard_subset_conservative_weighted.feature_importances_,
-        'features': X_train_subset.columns
-    }
-}
+# Get feature importances for model 5
+importances = cat_standard_subset_weighted.feature_importances_
+features = X_train_subset.columns
 
-# Create individual dataframes for each model
-feature_dfs = []
-for model_name, model_data in feature_importances.items():
-    features = model_data['features']
-    importances = model_data['importances']
-    model_df = pd.DataFrame({
-        'feature': features,
-        'importance': importances,
-        'model': model_name
-    })
-    model_df = model_df.sort_values(by='importance', ascending=False)
-    feature_dfs.append(model_df)
-    # Print top 20 features for each model
-    print(f"\nTop 20 features for {model_name}:")
-    for i, (feature, importance) in enumerate(zip(model_df['feature'][:20], model_df['importance'][:20])):
-        print(f"{i + 1}. {feature}: {importance:.6f}")
+# Create feature importance dataframe
+feature_df = pd.DataFrame({
+    'feature': features,
+    'importance': importances
+})
+feature_df = feature_df.sort_values(by='importance', ascending=False)
 
-# Combine all feature importance dataframes
-all_features_df = pd.concat(feature_dfs, ignore_index=True)
+# Print top 20 features
+print(f"\nTop 20 features for model 5 (feature-weighted):")
+for i, (feature, importance) in enumerate(zip(feature_df['feature'][:20], feature_df['importance'][:20])):
+    print(f"{i + 1}. {feature}: {importance:.6f}")
 
-# Save the combined feature importance dataframe
-all_features_df.to_csv(f'{write_dir}/features_importance_4models_chr_{chromosome_out}_NPR_{NPR_tr}.csv',
-                       index=False)
+# Save feature importance
+feature_df.to_csv(f'{write_dir}/features_importance_model5_chr_{chromosome_out}_NPR_{NPR_tr}.csv', index=False)
 
 # Create summary dictionary for model 5
 summary_dict = {
     'CatBoost': {
         'standard_subset_weighted': {
-            'AP_test': metrics_dict['standard_subset_weighted']['AP'],
-            'AUC_test': metrics_dict['standard_subset_weighted']['AUC'],
+            'AP_test': ap_score,
+            'AUC_test': auc_score,
             'params': original_params,
             'feature_weights': f'{", ".join(high_priority_patterns)} features set to {high_weight_value}, others to {default_weight}'
         },
@@ -524,7 +446,7 @@ with open(f'{write_dir}/summary_dict_catboost_weighted_model_chr_{chromosome_out
 # Add predictions to test_df and actual labels
 test_df['standard_subset_weighted_pred_prob'] = preds_standard_subset_weighted
 test_df['standard_subset_weighted_pred_label'] = cat_standard_subset_weighted.predict(X_test_subset)
-test_df['actual_label'] = Y_test  # Add actual labels to test_df
+test_df['actual_label'] = Y_test
 
 # Save the test_df with model 5 predictions
 test_df.to_csv(f'{write_dir}/predictions_parquet_catboost/predictions_weighted_model_chr{chromosome}.tsv', sep='\t',
