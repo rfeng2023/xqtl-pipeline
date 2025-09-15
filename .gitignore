@@ -38,3 +38,4 @@ create_proper_split.py
 # Config backups (keep only the main configs)
 *_backup.yaml
 *_old.yaml
+.virtual_documents/
