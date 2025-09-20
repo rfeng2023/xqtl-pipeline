@@ -56,3 +56,22 @@ model_variants:
 
 training:
   evaluation_metrics: ["average_precision_score", "roc_auc_score"]
+
+experiment:
+  sampling_parameters:
+    npr_train: 10
+    npr_test: 10
+  classification_thresholds:
+    train:
+      positive_class_threshold: 0.1
+      negative_class_threshold: 0.01
+    test:
+      positive_class_threshold: 0.9
+      negative_class_threshold: 0.01
+
+system:
+  temp_directory: "/nfs/scratch"
+  random_seeds:
+    torch_seed: 9448
+    numpy_seed: 9448
+    random_seed: 9448
