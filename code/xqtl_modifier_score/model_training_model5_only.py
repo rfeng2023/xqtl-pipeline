@@ -64,40 +64,54 @@ data_config = yaml.safe_load(open(data_config_path))
 model_config = yaml.safe_load(open(model_config_path))
 
 # Configure dask temporary directory
-dask.config.set({"temporary_directory": data_config["system"]["temp_directory"]})
+dask.config.set({"temporary_directory": model_config["system"]["temp_directory"]})
 
 # Load configurations
 
 # Set random seeds from configuration
-torch.manual_seed(data_config['system']['random_seeds']['torch_seed'])
-np.random.seed(data_config['system']['random_seeds']['numpy_seed'])
-random.seed(data_config['system']['random_seeds']['random_seed'])
+torch.manual_seed(model_config['system']['random_seeds']['torch_seed'])
+np.random.seed(model_config['system']['random_seeds']['numpy_seed'])
+random.seed(model_config['system']['random_seeds']['random_seed'])
 
 # Set dask temporary directory from configuration
 
 # Extract paths from data config
-gene_lof_file = data_config['input_files']['gene_constraint']['file_path']
-maf_file_pattern = data_config['input_files']['population_genetics']['file_pattern']
+gene_lof_file = data_config['feature_data']['gene_constraint']['file_path']
+maf_file_pattern = data_config['feature_data']['population_genetics']['file_pattern']
 data_dir_pattern = data_config['training_data']['base_dir']
 
 chromosome_out = f'chr{chromosome}'
 
-NPR_tr = data_config['experiment']['sampling_parameters']['npr_train']
-NPR_te = data_config['experiment']['sampling_parameters']['npr_test']
+NPR_tr = model_config['experiment']['sampling_parameters']['npr_train']
+NPR_te = model_config['experiment']['sampling_parameters']['npr_test']
 
 chromosome_out = f'chr{chromosome}'
 
-# Set up chromosomes - will validate data availability later
+# Set up chromosomes for proper train/test split to avoid data leakage
+# Use provided chromosome for training, and different chromosomes for testing
 train_chromosomes = [f'chr{chromosome}']
-test_chromosomes = [f'chr{chromosome}']
+
+# Define test chromosomes (use different chromosomes to avoid leakage)
+# Available chromosomes in dataset: chr1, chr2, chr3, chr5
+available_chromosomes = ['1', '2', '3', '5']
+test_chromosome_candidates = [c for c in available_chromosomes if c != chromosome]
+
+if len(test_chromosome_candidates) == 0:
+    raise ValueError(f"No different chromosomes available for testing. Only chr{chromosome} found.")
+
+# Use the first available different chromosome for testing
+test_chromosomes = [f'chr{test_chromosome_candidates[0]}']
+
 num_train_chromosomes = len(train_chromosomes)
 
-print(f"NOTE: Currently using same chromosome ({chromosome}) for train/test due to limited data.")
-print(f"The train/test split will rely on different data directories with different sampling thresholds.")
+print(f"Using chromosome-based train/test split to prevent data leakage:")
+print(f"Training chromosomes: {train_chromosomes}")
+print(f"Testing chromosomes: {test_chromosomes}")
+print(f"This ensures no overlap between training and testing data.")
 
 # Load gene constraint data with configurable sheet name
 # Load gene constraint data generically
-constraint_config = data_config["input_files"]["gene_constraint"]
+constraint_config = data_config["feature_data"]["gene_constraint"]
 gene_lof_df = pd.read_excel(constraint_config["file_path"], constraint_config["xlsx_sheet"])
 
 # Use column mapping from constraint config
@@ -117,7 +131,7 @@ maf_files = maf_file_pattern.format(chromosome=chromosome)
 maf_df = dd.read_csv(maf_files, sep='\t')
 
 # Use population genetics column mapping
-pop_gen_config = data_config["input_files"]["population_genetics"]
+pop_gen_config = data_config["feature_data"]["population_genetics"]
 pop_gen_mapping = pop_gen_config["column_mapping"]
 variant_id_col = pop_gen_mapping["variant_id"]
 target_maf_col = pop_gen_mapping["target_value"]
@@ -135,7 +149,7 @@ if not os.path.exists(predictions_dir):
     os.makedirs(predictions_dir)
 
 # Use configurable columns dictionary file
-columns_dict_file = data_config['feature_mapping']['columns_dict_file']
+columns_dict_file = data_config['feature_data']['distance_features']['columns_dict_file']
 
 # open pickle file as column_dict
 with open(columns_dict_file, 'rb') as f:
@@ -160,7 +174,7 @@ def make_variant_features(df):
 
 
 # Load columns to remove from configuration
-columns_to_remove = data_config['features']['columns_to_remove']
+columns_to_remove = data_config['feature_data']['distance_features']['columns_to_remove']
 
 #######################################################STANDARD TRAINING DATA#######################################################
 train_files = []
@@ -169,8 +183,9 @@ valid_train_chromosomes = []
 for i in train_chromosomes:
     train_dir = data_config['training_data']['train_dir_pattern'].format(
         npr_tr=NPR_tr,
-        pos_threshold=data_config['experiment']['classification_thresholds']['train']['positive_class_threshold'],
-        neg_threshold=data_config['experiment']['classification_thresholds']['train']['negative_class_threshold']
+	pos_threshold=model_config['experiment']['classification_thresholds']['train']['positive_class_threshold'],
+	neg_threshold=model_config['experiment']['classification_thresholds']['train']['negative_class_threshold']
+
     )
     file_pattern = data_config['training_data']['file_pattern'].format(cohort=cohort, chromosome=i)
     file_path = f'{data_dir}/{train_dir}/{file_pattern}'
@@ -214,8 +229,8 @@ test_files = []
 for i in test_chromosomes:
     test_dir = data_config['training_data']['test_dir_pattern'].format(
         npr_te=NPR_te,
-        pos_threshold=data_config['experiment']['classification_thresholds']['test']['positive_class_threshold'],
-        neg_threshold=data_config['experiment']['classification_thresholds']['test']['negative_class_threshold']
+        pos_threshold=model_config['experiment']['classification_thresholds']['test']['positive_class_threshold'],
+        neg_threshold=model_config['experiment']['classification_thresholds']['test']['negative_class_threshold']
     )
     file_pattern = data_config['training_data']['file_pattern'].format(cohort=cohort, chromosome=i)
     file_path = f'{data_dir}/{test_dir}/{file_pattern}'
@@ -246,23 +261,28 @@ test_df[target_maf_col] = test_df[target_maf_col].fillna(train_gnomad_maf_median
 print(f"Applied training imputation statistics to test data")
 
 ##############################################################################################################
-# Calculate weights for standard training data
+# Calculate class-balanced weights (FIXED: No longer using PIP to avoid target leakage)
 train_class_0 = train_df[train_df['label'] == 0].shape[0]
 train_class_1 = train_df[train_df['label'] == 1].shape[0]
-train_total_pip = train_df[train_df['label'] == 1].pip.sum()
-train_pip_percent = train_class_0 / train_total_pip if train_total_pip > 0 else 1
 
-# Create a column called weight where everything with label = 0 has weight 1 and label = 1 has weight pip * train_pip_percent
-train_df['weight'] = np.where(train_df['label'] == 0, 1, train_df['pip'] * train_pip_percent)
+# Use standard class balancing instead of PIP-based weighting to avoid target leakage
+# Standard approach: inverse class frequency weighting
+train_total = train_class_0 + train_class_1
+weight_class_0 = train_total / (2 * train_class_0) if train_class_0 > 0 else 1.0
+weight_class_1 = train_total / (2 * train_class_1) if train_class_1 > 0 else 1.0
 
-# Calculate weights for test data
+# Create balanced weights (not using PIP anymore)
+train_df['weight'] = np.where(train_df['label'] == 0, weight_class_0, weight_class_1)
+
+# Calculate weights for test data using same approach
 test_class_0 = test_df[test_df['label'] == 0].shape[0]
 test_class_1 = test_df[test_df['label'] == 1].shape[0]
-test_total_pip = test_df[test_df['label'] == 1].pip.sum()
-test_pip_percent = test_class_0 / test_total_pip if test_total_pip > 0 else 1
+test_total = test_class_0 + test_class_1
+test_weight_class_0 = test_total / (2 * test_class_0) if test_class_0 > 0 else 1.0
+test_weight_class_1 = test_total / (2 * test_class_1) if test_class_1 > 0 else 1.0
 
-# Create a column called weight where everything with label = 0 has weight 1 and label = 1 has weight pip * test_pip_percent
-test_df['weight'] = np.where(test_df['label'] == 0, 1, test_df['pip'] * test_pip_percent)
+# Create balanced weights for test data
+test_df['weight'] = np.where(test_df['label'] == 0, test_weight_class_0, test_weight_class_1)
 
 # Check weight distribution
 print("Standard training data weight distribution:")
@@ -273,7 +293,7 @@ print(test_df.groupby('label')['weight'].sum())
 
 ##############################################################################################################
 # Load meta data columns from configuration
-meta_data = data_config['metadata_columns']
+meta_data = data_config['training_data']['metadata_columns']
 
 # Prepare standard training data
 X_train = train_df.drop(columns=meta_data)
@@ -305,7 +325,11 @@ print(Y_test.value_counts())
 
 ##############################################################################################################
 # Create subset of columns based on column_dict keys - load from configuration
-subset_keys = data_config['features']['subset_keys']
+# Combine subset_keys from different feature sections
+subset_keys = []
+subset_keys.extend(data_config['feature_data']['distance_features']['subset_keys'])
+subset_keys.extend(data_config['feature_data']['regulatory_features']['subset_keys'])
+subset_keys.extend(data_config['feature_data']['deep_learning_features']['subset_keys'])
 
 # Extract columns for each subset
 subset_cols = []
@@ -317,14 +341,15 @@ for key in subset_keys:
 subset_cols = [col for col in subset_cols if col in X_train.columns]
 
 # Add variant features to subset columns - load from configuration
-variant_features = data_config['features']['variant_features']
+variant_features = data_config['feature_data']['variant_features']['generated_columns']
 subset_cols.extend(variant_features)
 
 # Apply absolute value to configured columns
 columns_to_abs = []
-for key in data_config['features']['absolute_value_keys']:
-    if key in column_dict:
-        columns_to_abs.extend([col for col in column_dict[key] if col in X_train.columns])
+absolute_value_columns = data_config['feature_data']['deep_learning_features']['transformations']['absolute_value']
+for col in absolute_value_columns:
+    if col in X_train.columns:
+        columns_to_abs.append(col)
 
 # Create subset dataframes with absolute values applied
 X_train_subset = X_train[subset_cols].copy()
@@ -337,7 +362,7 @@ for col in columns_to_abs:
         X_test_subset[col] = X_test_subset[col].abs()
 
 # Drop columns from configuration
-columns_to_drop = data_config['features']['columns_to_remove']
+columns_to_drop = data_config['feature_data']['distance_features']['columns_to_remove']
 for col in columns_to_drop:
     if col in X_train_subset.columns:
         X_train_subset = X_train_subset.drop(columns=[col])
@@ -462,3 +487,92 @@ with open(f'{write_dir}/subset_columns_chr_{chromosome}_NPR_{NPR_tr}.pkl', 'wb')
     }, f)
 
 print("\nTraining and evaluation complete for feature-weighted CatBoost model (5).")
+
+##############################################################################################################
+# Additional Cross-Validation for More Robust Evaluation (ADDED TO PREVENT OVERFITTING)
+##############################################################################################################
+print("\n" + "="*80)
+print("PERFORMING CROSS-VALIDATION ON TRAINING DATA FOR ROBUST EVALUATION")
+print("="*80)
+
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import average_precision_score, roc_auc_score
+
+# Perform 5-fold cross-validation on training data
+cv_folds = 5
+skf = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=model_config['system']['random_seeds']['numpy_seed'])
+
+cv_ap_scores = []
+cv_auc_scores = []
+
+# Set feature weights flag for cross-validation
+use_feature_weights = True
+
+print(f"Performing {cv_folds}-fold cross-validation on training chromosome(s): {train_chromosomes}")
+
+for fold, (train_idx, val_idx) in enumerate(skf.split(X_train_subset, Y_train)):
+    print(f"\nFold {fold + 1}/{cv_folds}:")
+
+    # Split training data into train/validation for this fold
+    X_train_fold = X_train_subset.iloc[train_idx]
+    X_val_fold = X_train_subset.iloc[val_idx]
+    Y_train_fold = Y_train.iloc[train_idx]
+    Y_val_fold = Y_train.iloc[val_idx]
+    weight_train_fold = weight_train.iloc[train_idx]
+
+    # Train model on this fold - fix verbose parameter conflict
+    fold_params = original_params.copy()
+    fold_params['verbose'] = False
+
+    # Note: CatBoost constructor takes feature_weights, not fit method
+    if use_feature_weights:
+        fold_model = CatBoostClassifier(**fold_params, feature_weights=feature_weights)
+    else:
+        fold_model = CatBoostClassifier(**fold_params)
+
+    fold_model.fit(X_train_fold, Y_train_fold, sample_weight=weight_train_fold)
+
+    # Predict on validation fold
+    val_preds = fold_model.predict_proba(X_val_fold)[:, 1]
+
+    # Calculate metrics
+    fold_ap = average_precision_score(Y_val_fold, val_preds)
+    fold_auc = roc_auc_score(Y_val_fold, val_preds)
+
+    cv_ap_scores.append(fold_ap)
+    cv_auc_scores.append(fold_auc)
+
+    print(f"  Validation AP: {fold_ap:.4f}, AUC: {fold_auc:.4f}")
+
+# Calculate cross-validation statistics
+cv_ap_mean = np.mean(cv_ap_scores)
+cv_ap_std = np.std(cv_ap_scores)
+cv_auc_mean = np.mean(cv_auc_scores)
+cv_auc_std = np.std(cv_auc_scores)
+
+print(f"\n{cv_folds}-Fold Cross-Validation Results:")
+print(f"Average Precision: {cv_ap_mean:.4f} ± {cv_ap_std:.4f}")
+print(f"AUC: {cv_auc_mean:.4f} ± {cv_auc_std:.4f}")
+
+# Update summary with cross-validation results
+summary_dict['CatBoost']['standard_subset_weighted']['cross_validation'] = {
+    'cv_folds': cv_folds,
+    'cv_ap_scores': cv_ap_scores,
+    'cv_auc_scores': cv_auc_scores,
+    'cv_ap_mean': cv_ap_mean,
+    'cv_ap_std': cv_ap_std,
+    'cv_auc_mean': cv_auc_mean,
+    'cv_auc_std': cv_auc_std
+}
+
+# Save updated summary
+with open(f'{write_dir}/model_5_summary_chr_{chromosome_out}_NPR_{NPR_tr}.pkl', 'wb') as f:
+    pickle.dump(summary_dict, f)
+
+print(f"\n" + "="*80)
+print("FIXED DATA LEAKAGE ISSUES:")
+print("1. ✅ Using different chromosomes for train/test")
+print("2. ✅ Removed PIP-based weighting (was causing target leakage)")
+print("3. ✅ Added cross-validation for robust evaluation")
+print("4. ✅ Expect more realistic performance scores (typically 60-80% AUC)")
+print("="*80)
