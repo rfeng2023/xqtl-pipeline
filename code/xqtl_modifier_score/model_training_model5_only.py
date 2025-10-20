@@ -80,21 +80,21 @@ gene_lof_file = data_config['feature_data']['gene_constraint']['file_path']
 maf_file_pattern = data_config['feature_data']['population_genetics']['file_pattern']
 data_dir_pattern = data_config['training_data']['base_dir']
 
-chromosome_out = f'chr{chromosome}'
-
 NPR_tr = model_config['experiment']['sampling_parameters']['npr_train']
 NPR_te = model_config['experiment']['sampling_parameters']['npr_test']
 
-chromosome_out = f'chr{chromosome}'
+# Normalize chromosome format - remove 'chr' prefix if present, then add it consistently
+chromosome_clean = chromosome.replace('chr', '')
+chromosome_out = f'chr{chromosome_clean}'
 
 # Set up chromosomes for proper train/test split to avoid data leakage
 # Use provided chromosome for training, and different chromosomes for testing
-train_chromosomes = [f'chr{chromosome}']
+train_chromosomes = [chromosome_out]
 
 # Define test chromosomes (use different chromosomes to avoid leakage)
 # Available chromosomes in dataset: chr1, chr2, chr3, chr5
 available_chromosomes = ['1', '2', '3', '5']
-test_chromosome_candidates = [c for c in available_chromosomes if c != chromosome]
+test_chromosome_candidates = [c for c in available_chromosomes if c != chromosome_clean]
 
 if len(test_chromosome_candidates) == 0:
     raise ValueError(f"No different chromosomes available for testing. Only chr{chromosome} found.")
@@ -127,7 +127,7 @@ gene_lof_df = gene_lof_df.rename(columns={source_gene_col: target_gene_col, sour
 gene_lof_df[target_value_col] = np.log2(gene_lof_df[target_value_col])
 
 
-maf_files = maf_file_pattern.format(chromosome=chromosome)
+maf_files = maf_file_pattern.format(chromosome=chromosome_clean)
 maf_df = dd.read_csv(maf_files, sep='\t')
 
 # Use population genetics column mapping
