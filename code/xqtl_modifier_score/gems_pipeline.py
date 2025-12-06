@@ -1,21 +1,3 @@
-"""
-GEMS Pipeline: Generalized Expression Modifier Scores
-
-This pipeline implements a machine learning approach to predict genetic variants
-that modify gene expression (eQTLs). GEMS extends beyond single-cell data to provide
-a generalized framework for expression modifier score prediction.
-
-Usage:
-    Training mode:
-        python gems_pipeline.py train <cohort> <chromosome> --data_config <path> --model_config <path>
-
-    Prediction mode:
-        python gems_pipeline.py predict <cohort> <chromosome> --model_path <path> --data_config <path>
-
-Author: Katie Cho
-Supervisor: Dr. Gao Wang
-"""
-
 import os
 import sys
 import argparse
